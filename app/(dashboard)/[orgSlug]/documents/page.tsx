@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useOrganization, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
@@ -11,12 +11,39 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { FileText, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FileText, Search } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentUploadDialog } from "@/components/document/document-upload-dialog";
 import { AnalysisType, Document } from "@/types";
 import { analysisTypes, formatFileSize } from "@/app/data/data";
 import { DocumentCard } from "@/components/document/document-card";
+
+function SkeletonCard() {
+  return (
+    <div className="border rounded-lg p-6 animate-pulse">
+      <div className="flex items-start gap-4">
+        <div className="h-12 w-12 rounded-lg bg-muted" />
+        <div className="flex-1 space-y-3">
+          <div className="h-5 w-1/3 bg-muted rounded" />
+          <div className="flex gap-4">
+            <div className="h-3 w-24 bg-muted rounded" />
+            <div className="h-3 w-20 bg-muted rounded" />
+            <div className="h-3 w-16 bg-muted rounded" />
+          </div>
+          <div className="h-24 w-full bg-muted rounded mt-4" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function DocumentsPage() {
   const { organization } = useOrganization();
@@ -27,8 +54,34 @@ export default function DocumentsPage() {
   const [expandedSummaries, setExpandedSummaries] = useState<Set<string>>(
     new Set(),
   );
-  const [selectedAnalysisType, setSelectedAnalysisType] =
-    useState<AnalysisType>("summary");
+  const [analysisTypeMap, setAnalysisTypeMap] = useState<
+    Record<string, AnalysisType>
+  >({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "analyzed" | "pending"
+  >("all");
+
+  const getAnalysisType = (docId: string): AnalysisType =>
+    analysisTypeMap[docId] || "summary";
+
+  const setAnalysisType = (docId: string, type: AnalysisType) => {
+    setAnalysisTypeMap((prev) => ({ ...prev, [docId]: type }));
+  };
+
+  // Filtered documents
+  const filteredDocuments = useMemo(() => {
+    return documents.filter((doc) => {
+      const matchesSearch = doc.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const matchesFilter =
+        filterStatus === "all" ||
+        (filterStatus === "analyzed" && doc.aiSummary) ||
+        (filterStatus === "pending" && !doc.aiSummary);
+      return matchesSearch && matchesFilter;
+    });
+  }, [documents, searchQuery, filterStatus]);
 
   // Fetch documents
   const fetchDocuments = async () => {
@@ -78,14 +131,14 @@ export default function DocumentsPage() {
         body: JSON.stringify({
           documentId,
           organizationId: organization.id,
-          analysisType: selectedAnalysisType,
+          analysisType: getAnalysisType(documentId),
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
         const analysisTypeLabel = analysisTypes.find(
-          (type) => type.value === selectedAnalysisType,
+          (type) => type.value === getAnalysisType(documentId),
         )?.label;
 
         toast.success(
@@ -129,28 +182,26 @@ export default function DocumentsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Documents</h1>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Upload and analyze documents in {organization?.name}
           </p>
         </div>
-
-        {/* Upload Dialog */}
         <DocumentUploadDialog onUploadSuccess={fetchDocuments} />
       </div>
 
       {/* Stats Bar */}
       {documents.length > 0 && !isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-3xl font-bold">{documents.length}</div>
-                <p className="text-sm text-gray-500">Total Documents</p>
+                <p className="text-sm text-muted-foreground">Total Documents</p>
               </div>
             </CardContent>
           </Card>
@@ -160,7 +211,7 @@ export default function DocumentsPage() {
                 <div className="text-3xl font-bold text-green-600">
                   {documents.filter((d) => d.aiSummary).length}
                 </div>
-                <p className="text-sm text-gray-500">Analyzed</p>
+                <p className="text-sm text-muted-foreground">Analyzed</p>
               </div>
             </CardContent>
           </Card>
@@ -175,10 +226,40 @@ export default function DocumentsPage() {
                     ),
                   )}
                 </div>
-                <p className="text-sm text-gray-500">Total Size</p>
+                <p className="text-sm text-muted-foreground">Total Size</p>
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Search & Filter Bar */}
+      {documents.length > 0 && !isLoading && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search documents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select
+            value={filterStatus}
+            onValueChange={(v) =>
+              setFilterStatus(v as "all" | "analyzed" | "pending")
+            }
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="analyzed">Analyzed</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       )}
 
@@ -186,39 +267,49 @@ export default function DocumentsPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Documents ({documents.length})
-            {isLoading && (
-              <Loader2 className="h-4 w-4 inline ml-2 animate-spin" />
-            )}
+            Documents{" "}
+            {!isLoading && `(${filteredDocuments.length})`}
           </CardTitle>
-          <CardDescription>
-            {documents.filter((d) => d.aiSummary).length} analyzed •{" "}
-            {documents.filter((d) => !d.aiSummary).length} pending
-          </CardDescription>
+          {!isLoading && documents.length > 0 && (
+            <CardDescription>
+              {documents.filter((d) => d.aiSummary).length} analyzed &bull;{" "}
+              {documents.filter((d) => !d.aiSummary).length} pending
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent>
           {isLoading ? (
+            <div className="space-y-6">
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          ) : filteredDocuments.length === 0 && documents.length > 0 ? (
             <div className="text-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-gray-600">Loading documents...</p>
+              <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                No documents match your search
+              </p>
             </div>
           ) : documents.length === 0 ? (
             <div className="text-center py-12">
-              <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600">No documents uploaded yet</p>
-              <p className="text-sm text-gray-500 mt-2">
+              <FileText className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+              <p className="text-muted-foreground">No documents uploaded yet</p>
+              <p className="text-sm text-muted-foreground/70 mt-2">
                 Upload your first document to get started
               </p>
             </div>
           ) : (
             <div className="space-y-6">
-              {documents.map((doc) => (
+              {filteredDocuments.map((doc) => (
                 <DocumentCard
                   key={doc.id}
                   document={doc}
                   isAnalyzing={isAnalyzing === doc.id}
-                  selectedAnalysisType={selectedAnalysisType}
-                  onAnalysisTypeChange={setSelectedAnalysisType}
+                  selectedAnalysisType={getAnalysisType(doc.id)}
+                  onAnalysisTypeChange={(type) =>
+                    setAnalysisType(doc.id, type)
+                  }
                   onAnalyze={handleAnalyze}
                   onDelete={handleDelete}
                   onToggleSummary={toggleSummary}

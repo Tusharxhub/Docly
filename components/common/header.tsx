@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   SignedIn,
   SignedOut,
@@ -14,13 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   Menu,
-  Home,
-  FileText,
-  Users,
   Brain,
   LogIn,
   UserPlus,
-  Building,
+  ChevronRight,
+  FileText,
+  LayoutDashboard,
+  ArrowLeftRight,
 } from "lucide-react";
 
 export default function Header() {
@@ -29,86 +29,69 @@ export default function Header() {
   const { organization } = useOrganization();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Get dynamic navigation based on whether user is in an organization
-  const getNavItems = () => {
-    const baseItems = [
-      { href: "/", label: "Home", icon: <Home className="h-4 w-4" /> },
-    ];
-
-    // If user is in an organization
-    if (organization) {
-      return [
-        ...baseItems,
-        {
-          href: `/${organization.slug}`,
-          label: "Organization Dashboard",
-          icon: <Building className="h-4 w-4" />,
-        },
-        {
-          href: `/${organization.slug}/documents`,
-          label: "Org Documents",
-          icon: <FileText className="h-4 w-4" />,
-        },
-        {
-          href: "/select-org",
-          label: "Switch Organization",
-          icon: <Users className="h-4 w-4" />,
-        },
-      ];
-    }
-    // If user is new
-    return [
-      ...baseItems,
-      {
-        href: "/select-org",
-        label: "Switch Organization",
-        icon: <Users className="h-4 w-4" />,
-      },
-    ];
-  };
-
-  const navItems = getNavItems();
+  const isDocumentsPage = organization && pathname?.includes("/documents");
+  const isDashboardPage =
+    organization &&
+    pathname === `/${organization.slug}` &&
+    !pathname?.includes("/documents");
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/60">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-          <Brain className="h-6 w-6 text-blue-600" />
-          DocuAI
-        </Link>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl">
+      <div className="container mx-auto px-4 h-14 flex items-center justify-between">
+        {/* Left: Logo + Breadcrumb */}
+        <div className="flex items-center gap-1">
+          <Link
+            href="/"
+            className="flex items-center gap-2 font-semibold text-lg"
+          >
+            <Brain className="h-5 w-5 text-blue-600" />
+            <span className="hidden sm:inline">Docly</span>
+          </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1">
-          {navItems.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/" && pathname?.startsWith(item.href));
-
-            return (
-              <Link key={item.href} href={item.href}>
+          {/* Breadcrumb nav when inside org */}
+          {organization && (
+            <nav className="hidden md:flex items-center text-sm text-muted-foreground">
+              <ChevronRight className="h-3.5 w-3.5 mx-1" />
+              <Link href={`/${organization.slug}`}>
                 <Button
-                  variant={isActive ? "secondary" : "ghost"}
+                  variant={isDashboardPage ? "secondary" : "ghost"}
                   size="sm"
-                  className="gap-2"
+                  className="h-7 px-2 gap-1.5 font-normal text-sm"
                 >
-                  {item.icon}
-                  {item.label}
+                  <LayoutDashboard className="h-3.5 w-3.5" />
+                  {organization.name}
                 </Button>
               </Link>
-            );
-          })}
-        </nav>
+              <ChevronRight className="h-3.5 w-3.5 mx-0.5" />
+              <Link href={`/${organization.slug}/documents`}>
+                <Button
+                  variant={isDocumentsPage ? "secondary" : "ghost"}
+                  size="sm"
+                  className="h-7 px-2 gap-1.5 font-normal text-sm"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Documents
+                </Button>
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5 mx-0.5" />
+              <Link href="/select-org">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 gap-1.5 font-normal text-sm"
+                >
+                  <ArrowLeftRight className="h-3.5 w-3.5" />
+                  Switch
+                </Button>
+              </Link>
+            </nav>
+          )}
+        </div>
 
-        {/* Auth Section */}
-        <div className="flex items-center gap-4">
+        {/* Right: Auth Section */}
+        <div className="flex items-center gap-3">
           <SignedIn>
             <div className="hidden md:flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                {organization
-                  ? `In: ${organization.name}`
-                  : user?.firstName || user?.username}
-              </span>
               <UserButton />
             </div>
           </SignedIn>
@@ -117,20 +100,19 @@ export default function Header() {
             <div className="hidden md:flex items-center gap-2">
               <Link href="/sign-in">
                 <Button variant="ghost" size="sm">
-                  <LogIn className="h-4 w-4 mr-2" />
+                  <LogIn className="h-4 w-4 mr-1.5" />
                   Sign In
                 </Button>
               </Link>
               <Link href="/sign-up">
                 <Button size="sm">
-                  <UserPlus className="h-4 w-4 mr-2" />
+                  <UserPlus className="h-4 w-4 mr-1.5" />
                   Sign Up
                 </Button>
               </Link>
             </div>
           </SignedOut>
 
-          {/* We are building this during video */}
           {/* Mobile Menu */}
           <div className="md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -139,37 +121,64 @@ export default function Header() {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                <div className="flex flex-col gap-4 mt-8">
+              <SheetContent side="right" className="w-75 sm:w-100">
+                <div className="flex flex-col gap-2 mt-8">
                   {/* Mobile Navigation */}
-                  {navItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                    >
+                  {organization ? (
+                    <>
+                      <Link
+                        href={`/${organization.slug}`}
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <Button
+                          variant={isDashboardPage ? "secondary" : "ghost"}
+                          className="w-full justify-start gap-2"
+                        >
+                          <LayoutDashboard className="h-4 w-4" />
+                          {organization.name}
+                        </Button>
+                      </Link>
+                      <Link
+                        href={`/${organization.slug}/documents`}
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <Button
+                          variant={isDocumentsPage ? "secondary" : "ghost"}
+                          className="w-full justify-start gap-2"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Documents
+                        </Button>
+                      </Link>
+                      <Link
+                        href="/select-org"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start gap-2"
+                        >
+                          <ArrowLeftRight className="h-4 w-4" />
+                          Switch Organization
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
+                    <Link href="/" onClick={() => setIsOpen(false)}>
                       <Button
-                        variant={pathname === item.href ? "secondary" : "ghost"}
+                        variant={pathname === "/" ? "secondary" : "ghost"}
                         className="w-full justify-start gap-2"
                       >
-                        {item.icon}
-                        {item.label}
+                        Home
                       </Button>
                     </Link>
-                  ))}
+                  )}
 
                   {/* Mobile Auth */}
                   <div className="border-t pt-4 mt-4">
                     <SignedIn>
-                      <div className="flex flex-col gap-2">
-                        <div className="px-2 text-sm text-gray-600 mb-2">
-                          {organization
-                            ? `In: ${organization.name}`
-                            : `Signed in as ${user?.firstName || user?.username}`}
-                        </div>
-                        <div className="flex justify-center">
-                          <UserButton afterSignOutUrl="/" />
-                        </div>
+                      <div className="flex justify-center">
+                        <UserButton afterSignOutUrl="/" />
                       </div>
                     </SignedIn>
 
@@ -177,13 +186,13 @@ export default function Header() {
                       <div className="flex flex-col gap-2">
                         <Link href="/sign-in" onClick={() => setIsOpen(false)}>
                           <Button variant="outline" className="w-full">
-                            <LogIn className="h-4 w-4 mr-2" />
+                            <LogIn className="h-4 w-4 mr-1.5" />
                             Sign In
                           </Button>
                         </Link>
                         <Link href="/sign-up" onClick={() => setIsOpen(false)}>
                           <Button className="w-full">
-                            <UserPlus className="h-4 w-4 mr-2" />
+                            <UserPlus className="h-4 w-4 mr-1.5" />
                             Sign Up
                           </Button>
                         </Link>

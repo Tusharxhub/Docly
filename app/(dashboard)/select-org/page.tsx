@@ -134,13 +134,6 @@ export default function SelectOrgPage() {
     }
   };
 
-  // Debug: Log current organization list
-  console.log("Current organization list:", {
-    isLoaded,
-    count: userMemberships?.count,
-    data: userMemberships?.data?.map((org) => org.organization.name),
-  });
-
   return (
     <div className="container max-w-4xl mx-auto p-6">
       <div className="mb-8 text-center">

@@ -26,6 +26,17 @@ import {
 import { Document, AnalysisType } from "@/types";
 import { analysisTypes } from "@/app/data/data";
 
+const keywordColors = [
+  "bg-blue-100 text-blue-700",
+  "bg-purple-100 text-purple-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-amber-100 text-amber-700",
+  "bg-rose-100 text-rose-700",
+  "bg-cyan-100 text-cyan-700",
+  "bg-indigo-100 text-indigo-700",
+  "bg-orange-100 text-orange-700",
+];
+
 interface DocumentCardProps {
   document: Document;
   isAnalyzing: boolean;
@@ -59,196 +70,182 @@ export function DocumentCard({
   };
 
   return (
-    <div className="border rounded-lg p-6 hover:shadow-lg transition-all">
-      <div className="flex items-start justify-between">
-        {/* Left Column: Document Info */}
-        <div className="flex items-start gap-4 flex-1">
-          <div className="p-3 rounded-lg bg-blue-100">
-            <FileText className="h-6 w-6 text-blue-600" />
+    <div className="border rounded-lg p-5 hover:shadow-md transition-all">
+      {/* Top row: doc info + actions */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className="p-2.5 rounded-lg bg-blue-50 shrink-0">
+            <FileText className="h-5 w-5 text-blue-600" />
           </div>
-          <div className="flex-1">
-            {/* Document Header */}
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="font-semibold text-lg mb-1">{doc.name}</h3>
-                <div className="flex items-center gap-4 text-sm text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <User className="h-3 w-3" />
-                    {doc.user.name || doc.user.email}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {new Date(doc.createdAt).toLocaleDateString()}
-                  </span>
-                  {doc.fileSize && (
-                    <span className="flex items-center gap-1">
-                      <File className="h-3 w-3" />
-                      {formatFileSize(doc.fileSize)}
-                    </span>
-                  )}
-                </div>
-              </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold text-base truncate">{doc.name}</h3>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+              <span className="flex items-center gap-1">
+                <User className="h-3 w-3" />
+                {doc.user.name || doc.user.email}
+              </span>
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {new Date(doc.createdAt).toLocaleDateString()}
+              </span>
+              {doc.fileSize && (
+                <span className="flex items-center gap-1">
+                  <File className="h-3 w-3" />
+                  {formatFileSize(doc.fileSize)}
+                </span>
+              )}
               {doc.sentiment && (
-                <Badge>
-                  <div className="flex items-center gap-1">
-                    <span className="capitalize">{doc.sentiment}</span>
-                  </div>
+                <Badge variant="secondary" className="text-xs capitalize">
+                  {doc.sentiment}
                 </Badge>
               )}
             </div>
-
-            {/* AI Analysis Section */}
-            {doc.aiSummary && (
-              <div className="mt-4 p-4 bg-linear-to-r from-gray-50 to-blue-50 rounded-lg border">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Brain className="h-5 w-5 text-green-600" />
-                    <span className="font-medium">AI Analysis</span>
-                    <Badge variant="outline" className="ml-2">
-                      Gemini AI
-                    </Badge>
-                  </div>
-                  {doc.aiSummary.length > 200 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onToggleSummary(doc.id)}
-                    >
-                      {isExpanded ? "Show less" : "Read more"}
-                    </Button>
-                  )}
-                </div>
-                {/* Summary Content */}
-                <div className="text-gray-700">
-                  {isExpanded ? (
-                    <div className="prose prose-sm max-w-none">
-                      <ReactMarkdown>{doc.aiSummary}</ReactMarkdown>
-                    </div>
-                  ) : (
-                    <div className="prose prose-sm max-w-none">
-                      <ReactMarkdown>
-                        {doc.aiSummary.length > 200
-                          ? `${doc.aiSummary.substring(0, 200)}...`
-                          : doc.aiSummary}
-                      </ReactMarkdown>
-                    </div>
-                  )}
-                </div>
-                {/* Keywords */}
-                {doc.aiKeywords.length > 0 && (
-                  <div className="mt-4 pt-3 border-t">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Tag className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium">Key Topics</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {doc.aiKeywords.slice(0, 8).map((keyword, idx) => (
-                        <Badge
-                          key={idx}
-                          variant="secondary"
-                          className="px-3 py-1"
-                        >
-                          {keyword}
-                        </Badge>
-                      ))}
-                      {doc.aiKeywords.length > 8 && (
-                        <Badge variant="outline" className="px-3 py-1">
-                          +{doc.aiKeywords.length - 8} more
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Right Column: Actions */}
-        <div className="flex flex-col gap-2 ml-4">
-          {/* Download Button */}
+        {/* Compact actions row */}
+        <div className="flex items-center gap-2 shrink-0">
           {doc.fileUrl && (
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
+              className="h-8 w-8"
               onClick={() => window.open(doc.fileUrl, "_blank")}
               title="Download"
-              className="justify-start"
             >
-              <Download className="h-4 w-4 mr-2" />
-              Download
+              <Download className="h-3.5 w-3.5" />
             </Button>
           )}
 
-          {/* Analysis Section */}
-          <div className="space-y-2">
-            <div className="text-xs text-gray-500">
-              {doc.aiSummary ? "Re-analyze with:" : "Analyze with:"}
-            </div>
-
-            <Select
-              value={selectedAnalysisType}
-              onValueChange={(value: AnalysisType) =>
-                onAnalysisTypeChange(value)
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue>
-                  <div className="flex items-center gap-2">
-                    {getAnalysisIcon(selectedAnalysisType)}
+          <Select
+            value={selectedAnalysisType}
+            onValueChange={(value: AnalysisType) =>
+              onAnalysisTypeChange(value)
+            }
+          >
+            <SelectTrigger className="w-32.5 h-8 text-xs">
+              <SelectValue>
+                <div className="flex items-center gap-1.5">
+                  {getAnalysisIcon(selectedAnalysisType)}
+                  <span>
                     {
                       analysisTypes.find(
                         (type) => type.value === selectedAnalysisType,
                       )?.label
                     }
+                  </span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {analysisTypes.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  <div className="flex items-center gap-2">
+                    <type.icon className="h-4 w-4" />
+                    {type.label}
                   </div>
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {analysisTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    <div className="flex items-center gap-2">
-                      <type.icon className="h-4 w-4" />
-                      {type.label}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            <Button
-              variant={doc.aiSummary ? "outline" : "default"}
-              size="sm"
-              onClick={() => onAnalyze(doc.id)}
-              disabled={isAnalyzing}
-              className="justify-start w-full"
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {doc.aiSummary ? "Re-analyzing..." : "Analyzing..."}
-                </>
-              ) : (
-                <>
-                  <Brain className="h-4 w-4 mr-2" />
-                  {doc.aiSummary ? "Re-analyze" : "Analyze"}
-                </>
-              )}
-            </Button>
-          </div>
+          <Button
+            variant={doc.aiSummary ? "outline" : "default"}
+            size="sm"
+            className="h-8 text-xs"
+            onClick={() => onAnalyze(doc.id)}
+            disabled={isAnalyzing}
+          >
+            {isAnalyzing ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Brain className="h-3.5 w-3.5 mr-1.5" />
+                {doc.aiSummary ? "Re-analyze" : "Analyze"}
+              </>
+            )}
+          </Button>
 
-          {/* Delete Button */}
           <Button
             variant="ghost"
-            size="sm"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 justify-start"
+            size="icon"
+            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
             onClick={() => onDelete(doc.id)}
+            title="Delete"
           >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
+
+      {/* AI Analysis Section */}
+      {doc.aiSummary && (
+        <div className="mt-4 p-4 bg-linear-to-r from-muted/50 to-blue-50/50 rounded-lg border">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Brain className="h-4 w-4 text-green-600" />
+              <span className="font-medium text-sm">AI Analysis</span>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                Gemini
+              </Badge>
+            </div>
+            {doc.aiSummary.length > 200 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs"
+                onClick={() => onToggleSummary(doc.id)}
+              >
+                {isExpanded ? "Show less" : "Read more"}
+              </Button>
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground leading-relaxed">
+            {isExpanded ? (
+              <div className="prose prose-sm max-w-none">
+                <ReactMarkdown>{doc.aiSummary}</ReactMarkdown>
+              </div>
+            ) : (
+              <div className="prose prose-sm max-w-none">
+                <ReactMarkdown>
+                  {doc.aiSummary.length > 200
+                    ? `${doc.aiSummary.substring(0, 200)}...`
+                    : doc.aiSummary}
+                </ReactMarkdown>
+              </div>
+            )}
+          </div>
+          {/* Keywords */}
+          {doc.aiKeywords.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-border/50">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Tag className="h-3 w-3 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground">
+                  Key Topics
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {doc.aiKeywords.slice(0, 8).map((keyword, idx) => (
+                  <span
+                    key={idx}
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${keywordColors[idx % keywordColors.length]}`}
+                  >
+                    {keyword}
+                  </span>
+                ))}
+                {doc.aiKeywords.length > 8 && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                    +{doc.aiKeywords.length - 8} more
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
