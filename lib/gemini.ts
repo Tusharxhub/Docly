@@ -1,16 +1,20 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-  throw new Error("GEMINI API KEY is not set environment varaibles");
+
+function getGenAI() {
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not set in environment variables");
+  }
+  return new GoogleGenerativeAI(apiKey);
 }
-const genAI = new GoogleGenerativeAI(apiKey);
 
 export async function analyzeWithGemini(
   text: string,
   analysisType: "summary" | "qa" | "sentiment" | "entities" | "extract",
 ) {
   try {
+    const genAI = getGenAI();
     // Use the basic model
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
