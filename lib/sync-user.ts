@@ -40,7 +40,14 @@ export async function syncUserToDatabase() {
 
     return dbUser;
   } catch (error) {
+    // Silently handle during static generation (headers() not available)
+    if (
+      error instanceof Error &&
+      error.message.includes("DYNAMIC_SERVER_USAGE")
+    ) {
+      return null;
+    }
     console.error("Error syncing user from Clerk:", error);
-    throw error;
+    return null;
   }
 }
