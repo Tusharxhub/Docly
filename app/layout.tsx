@@ -7,6 +7,8 @@ import Footer from "@/components/common/footer";
 import { Toaster } from "sonner";
 import { syncUserToDatabase } from "@/lib/sync-user";
 
+export const dynamic = "force-dynamic";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {

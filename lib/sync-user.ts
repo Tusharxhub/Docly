@@ -41,9 +41,12 @@ export async function syncUserToDatabase() {
     return dbUser;
   } catch (error) {
     // Silently handle during static generation (headers() not available)
+    const msg = error instanceof Error ? error.message : String(error);
+    const digest = (error as any)?.digest;
     if (
-      error instanceof Error &&
-      error.message.includes("DYNAMIC_SERVER_USAGE")
+      msg.includes("DYNAMIC_SERVER_USAGE") ||
+      msg.includes("headers") ||
+      digest === "DYNAMIC_SERVER_USAGE"
     ) {
       return null;
     }
