@@ -54,7 +54,7 @@ NEXT_PUBLIC_APP_URL=
 
 
 # Hostinger VPS deployment
-sh root@your_server_ip  Update System Packages
+sh root@your_server_ipUpdate System Packages
 sudo apt update && sudo apt upgrade -y
 
 # Install Node.js & npm (for running Next.js):
