@@ -20,7 +20,7 @@ export default function Footer() {
             </p>
             <div className="flex gap-3">
               <a
-                href="https://github.com/Tusharxhub/Docly"
+                href="https://github.com/Tushardevx01/Docly"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors"
